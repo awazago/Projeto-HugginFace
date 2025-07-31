@@ -14,8 +14,8 @@ if not STABILITY_KEY:
 else:
     print(f"Chave de API encontrada. Começa com: '{STABILITY_KEY[:5]}...'")
 
-#URL = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
-URL = "https://api.stability.ai/v2beta/stable-image/generate/core"
+URL = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
+#URL = "https://api.stability.ai/v2beta/stable-image/generate/core"
 
 router = APIRouter()
 
@@ -51,12 +51,42 @@ async def generate_image(request: ImageRequest):
         
         response.raise_for_status()
 
-        base64_image = base64.b64encode(response.content).decode('utf-8')
+        # 1. Obter metadados dos cabeçalhos da resposta
+        finish_reason = response.headers.get("finish-reason")
+        seed = response.headers.get("seed")
+        #base64_image = base64.b64encode(response.content).decode('utf-8')
 
+        # 2. Verificar se a imagem foi filtrada por conteúdo
+        if finish_reason == 'CONTENT_FILTERED':
+            raise HTTPException(
+                status_code=400,
+                detail="A geração falhou porque a imagem foi classificada como NSFW."
+            )
+
+        # 3. Definir o diretório de saída e criá-lo se não existir
+        output_dir = "imagens_geradas"
+        os.makedirs(output_dir, exist_ok=True)
+
+        # 4. Criar um nome de ficheiro único e o caminho completo
+        filename = f"gerado_{seed}.{request.output_format}"
+        file_path = os.path.join(output_dir, filename)
+
+        # 5. Salvar o conteúdo da imagem no ficheiro
+        with open(file_path, "wb") as f:
+            f.write(response.content)
+
+        print(f"Imagem salva em: {file_path}")
+
+        # 6. Retornar uma mensagem de sucesso com o caminho do ficheiro
         return {
-            "message": "Imagem gerada com sucesso pelo modelo Ultra",
-            "image_data": f"data:image/webp;base64,{base64_image}"
+            "message": "Imagem gerada e salva com sucesso!",
+            "file_path": file_path
         }
+
+        #return {
+        #    "message": "Imagem gerada com sucesso pelo modelo Ultra",
+        #    "image_data": f"data:image/webp;base64,{base64_image}"
+        #}
         
     except requests.exceptions.HTTPError as e:
         print(f"Resposta de erro da API: {e.response.text}")
