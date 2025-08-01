@@ -14,8 +14,8 @@ if not STABILITY_KEY:
 else:
     print(f"Chave de API encontrada. Começa com: '{STABILITY_KEY[:5]}...'")
 
-URL = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
-#URL = "https://api.stability.ai/v2beta/stable-image/generate/core"
+#URL = "https://api.stability.ai/v2beta/stable-image/generate/ultra"
+URL = "https://api.stability.ai/v2beta/stable-image/generate/core"
 
 router = APIRouter()
 
